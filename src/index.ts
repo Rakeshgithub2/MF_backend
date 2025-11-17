@@ -133,7 +133,10 @@ process.on('unhandledRejection', (reason, promise) => {
 });
 
 // Start server
-if (process.env.NODE_ENV !== 'test') {
+// Don't start server in serverless environments (Vercel)
+const isServerless = process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME;
+
+if (process.env.NODE_ENV !== 'test' && !isServerless) {
   const httpServer = createServer(app);
 
   // Initialize Socket.IO (commented out until socket.io is installed)
