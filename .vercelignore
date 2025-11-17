@@ -1,0 +1,14 @@
+# Don't upload these to Vercel
+
+node_modules
+.env
+.env.local
+.env._.local
+dist
+_.log
+.DS_Store
+tests
+_.test.ts
+_.spec.ts
+coverage
+.vscode
