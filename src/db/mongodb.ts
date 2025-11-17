@@ -7,6 +7,7 @@ class MongoDB {
   private static instance: MongoDB;
   private client: MongoClient;
   private db: Db | null = null;
+  private connecting: Promise<void> | null = null;
 
   private constructor() {
     this.client = new MongoClient(DATABASE_URL);
@@ -20,17 +21,35 @@ class MongoDB {
   }
 
   public async connect(): Promise<void> {
-    try {
-      await this.client.connect();
-      // Extract database name from URL
-      const dbName =
-        DATABASE_URL.split('/').pop()?.split('?')[0] || 'mutual_funds_db';
-      this.db = this.client.db(dbName);
-      console.log('✅ MongoDB connected successfully');
-    } catch (error) {
-      console.error('❌ MongoDB connection failed:', error);
-      throw error;
+    // If already connecting, wait for that connection
+    if (this.connecting) {
+      return this.connecting;
     }
+
+    // If already connected, return immediately
+    if (this.db) {
+      return;
+    }
+
+    // Start new connection
+    this.connecting = (async () => {
+      try {
+        await this.client.connect();
+        // Extract database name from URL
+        const dbName =
+          DATABASE_URL.split('/').pop()?.split('?')[0] || 'mutual_funds_db';
+        this.db = this.client.db(dbName);
+        console.log('✅ MongoDB connected successfully');
+      } catch (error) {
+        console.error('❌ MongoDB connection failed:', error);
+        this.connecting = null;
+        throw error;
+      } finally {
+        this.connecting = null;
+      }
+    })();
+
+    return this.connecting;
   }
 
   public getDb(): Db {
@@ -38,6 +57,10 @@ class MongoDB {
       throw new Error('Database not initialized. Call connect() first.');
     }
     return this.db;
+  }
+
+  public isConnected(): boolean {
+    return this.db !== null;
   }
 
   public getCollection<T extends Document = Document>(

@@ -6,7 +6,7 @@ import { createServer } from 'http';
 import routes from './routes';
 import { errorHandler } from './middlewares/error';
 import { generalRateLimit } from './middleware/rateLimiter';
-import { connectToDatabase } from './db/mongodb';
+import { connectToDatabase, MongoDB } from './db/mongodb';
 // Import Socket.IO and Change Streams (will handle gracefully if not available)
 // import { initializeSocket } from './services/socket';
 // import { startWatchlistChangeStream } from './services/changeStreams';
@@ -40,18 +40,7 @@ app.use(
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// Middleware to ensure DB connection for serverless
-app.use(async (req, res, next) => {
-  try {
-    await connectToDatabase();
-    next();
-  } catch (error) {
-    console.error('Database connection error:', error);
-    next(); // Continue anyway, routes will handle DB errors
-  }
-});
-
-// Health check endpoint
+// Health check endpoint (no DB required) - BEFORE DB middleware
 app.get('/health', (req, res) => {
   res.json({
     status: 'OK',
@@ -60,10 +49,33 @@ app.get('/health', (req, res) => {
   });
 });
 
-// Test endpoint
+// Test endpoint (no DB required) - BEFORE DB middleware
 app.get('/api/test', (req, res) => {
   console.log('Test endpoint hit');
-  res.json({ message: 'API is working!' });
+  res.json({ 
+    message: 'API is working!',
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV || 'development'
+  });
+});
+
+// Middleware to ensure DB connection for serverless
+app.use(async (req, res, next) => {
+  try {
+    const mongodb = MongoDB.getInstance();
+    if (!mongodb.isConnected()) {
+      console.log('Connecting to database...');
+      await connectToDatabase();
+    }
+    next();
+  } catch (error) {
+    console.error('Database connection error:', error);
+    // Return 503 instead of continuing
+    res.status(503).json({
+      error: 'Database unavailable',
+      message: error instanceof Error ? error.message : 'Failed to connect to database'
+    });
+  }
 });
 
 // API routes
