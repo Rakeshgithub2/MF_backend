@@ -4,7 +4,7 @@ import { JobType } from './types/jobs';
 import { amfiService } from './services/amfiService';
 import { yahooFinanceService } from './services/yahooFinanceService';
 import { newsService } from './services/newsService';
-import { alertService } from './services/alertService';
+// import { alertService } from './services/alertService'; // Service does not exist
 import { emailService } from './services/emailService';
 
 // Load environment variables
@@ -84,11 +84,9 @@ const alertWorker = new Worker(
       switch (job.name) {
         case JobType.ALERT_CHECK:
           console.log('Checking user alerts...');
-          const alertResult = await alertService.checkAlerts();
-          console.log(
-            `Alert check completed. Checked: ${alertResult.checked}, Triggered: ${alertResult.triggered}, Errors: ${alertResult.errors.length}`
-          );
-          return alertResult;
+          // TODO: Implement alertService or remove this functionality
+          console.log('Alert service not implemented yet');
+          return { checked: 0, triggered: 0, errors: [] };
 
         default:
           throw new Error(`Unknown alert job type: ${job.name}`);

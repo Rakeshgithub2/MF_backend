@@ -16,6 +16,13 @@ export interface User {
   googleId?: string;
   provider?: string; // 'local' | 'google'
 
+  // Two-factor authentication
+  twoFactorAuth?: {
+    secret?: string;
+    enabled?: boolean;
+    backupCodes?: string[];
+  };
+
   createdAt: Date;
   updatedAt: Date;
 }

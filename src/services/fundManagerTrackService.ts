@@ -442,10 +442,10 @@ function calculateReturns(performances: any[]): {
       ? parseFloat((((currentNav - nav1Y) / nav1Y) * 100).toFixed(2))
       : null,
     returns3Y: nav3Y
-      ? parseFloat((Math.pow(currentNav / nav3Y, 1 / 3) - 1) * 100).toFixed(2)
+      ? parseFloat(((Math.pow(currentNav / nav3Y, 1 / 3) - 1) * 100).toFixed(2))
       : null,
     returns5Y: nav5Y
-      ? parseFloat((Math.pow(currentNav / nav5Y, 1 / 5) - 1) * 100).toFixed(2)
+      ? parseFloat(((Math.pow(currentNav / nav5Y, 1 / 5) - 1) * 100).toFixed(2))
       : null,
   };
 }

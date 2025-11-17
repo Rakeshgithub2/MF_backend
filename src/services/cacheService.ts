@@ -95,7 +95,6 @@ class CacheService {
           key,
           $or: [
             { expiresAt: { $exists: false } },
-            { expiresAt: null },
             { expiresAt: { $gt: new Date() } },
           ],
         });
@@ -146,24 +145,30 @@ class CacheService {
         const existing = await cacheCollection.findOne({ key });
 
         if (existing) {
+          const updateFields: any = {
+            value,
+            updatedAt: new Date(),
+          };
+          if (expiresAt) {
+            updateFields.expiresAt = expiresAt;
+          }
           await cacheCollection.updateOne(
             { key },
             {
-              $set: {
-                value,
-                expiresAt,
-                updatedAt: new Date(),
-              },
+              $set: updateFields,
             }
           );
         } else {
-          await cacheCollection.insertOne({
+          const docToInsert: any = {
             key,
             value,
-            expiresAt: expiresAt || undefined,
             createdAt: new Date(),
             updatedAt: new Date(),
-          });
+          };
+          if (expiresAt) {
+            docToInsert.expiresAt = expiresAt;
+          }
+          await cacheCollection.insertOne(docToInsert);
         }
       } catch (error) {
         console.error('Cache set error (MongoDB):', error);
@@ -253,7 +258,6 @@ class CacheService {
           key,
           $or: [
             { expiresAt: { $exists: false } },
-            { expiresAt: null },
             { expiresAt: { $gt: new Date() } },
           ],
         });

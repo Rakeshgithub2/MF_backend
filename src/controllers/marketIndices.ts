@@ -9,7 +9,10 @@ const ALPHA_VANTAGE_API_KEY = process.env.RAPIDAPI_KEY || 'L4RRMFHNPHTVUHRK';
  * - NSE API for Indian indices
  * - Yahoo Finance as fallback
  */
-export const getMarketIndices = async (req: Request, res: Response) => {
+export const getMarketIndices = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     // Fetch multiple indices in parallel
     const [sensexData, niftyData, nseAllIndices] = await Promise.allSettled([
@@ -138,11 +141,12 @@ export const getMarketIndices = async (req: Request, res: Response) => {
     // If no data was fetched, return error
     if (Object.keys(indices).length === 0) {
       console.log('⚠️  No live data available from any source');
-      return res.status(503).json({
+      res.status(503).json({
         success: false,
         error: 'Market data temporarily unavailable',
         timestamp: new Date().toISOString(),
       });
+      return;
     }
 
     res.json({
@@ -154,7 +158,7 @@ export const getMarketIndices = async (req: Request, res: Response) => {
   } catch (error: any) {
     console.error('Market indices fetch error:', error.message);
 
-    return res.status(500).json({
+    res.status(500).json({
       success: false,
       error: 'Failed to fetch market data',
       message: error.message,

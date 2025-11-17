@@ -145,7 +145,9 @@ export const createGoal = async (
       priority: validatedData.priority || 'MEDIUM',
       category: validatedData.category,
       status: 'IN_PROGRESS',
-      description: validatedData.description,
+      ...(validatedData.description && {
+        description: validatedData.description,
+      }),
       linkedFunds: validatedData.linkedFunds || [],
       createdAt: new Date(),
       updatedAt: new Date(),
@@ -313,7 +315,7 @@ export const getGoalsSummary = async (
         )
         .slice(0, 3)
         .map((goal) => ({
-          id: goal.id,
+          id: goal._id?.toString() || '',
           name: goal.name,
           targetDate: goal.targetDate,
           daysRemaining: Math.ceil(

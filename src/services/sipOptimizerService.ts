@@ -211,12 +211,10 @@ export async function optimizeSipDate(
     date5thSIP: calculateSipReturns(5, dayWiseData, sipAmount, currentNav),
     date15thSIP: calculateSipReturns(15, dayWiseData, sipAmount, currentNav),
     date25thSIP: calculateSipReturns(25, dayWiseData, sipAmount, currentNav),
-    bestDate: calculateSipReturns(
-      optimalDate,
-      dayWiseData,
-      sipAmount,
-      currentNav
-    ),
+    bestDate: {
+      date: optimalDate,
+      ...calculateSipReturns(optimalDate, dayWiseData, sipAmount, currentNav),
+    },
   };
 
   // Generate summary

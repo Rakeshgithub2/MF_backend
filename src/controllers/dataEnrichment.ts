@@ -26,25 +26,30 @@ export const getAllFunds = async (req: Request, res: Response) => {
 /**
  * Enrich single fund by scheme code
  */
-export const enrichSingleFund = async (req: Request, res: Response) => {
+export const enrichSingleFund = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { schemeCode } = req.params;
 
     if (!schemeCode) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Scheme code is required',
       });
+      return;
     }
 
     const enrichedData =
       await fundDataEnrichmentService.enrichFundData(schemeCode);
 
     if (!enrichedData) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: `No data found for scheme code: ${schemeCode}`,
       });
+      return;
     }
 
     res.json({
@@ -65,7 +70,10 @@ export const enrichSingleFund = async (req: Request, res: Response) => {
  * Bulk enrich multiple funds
  * POST body: { schemeCodes: string[], batchSize?: number }
  */
-export const bulkEnrichFunds = async (req: Request, res: Response) => {
+export const bulkEnrichFunds = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { schemeCodes, batchSize = 10 } = req.body;
 
@@ -74,10 +82,11 @@ export const bulkEnrichFunds = async (req: Request, res: Response) => {
       !Array.isArray(schemeCodes) ||
       schemeCodes.length === 0
     ) {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'schemeCodes array is required and must not be empty',
       });
+      return;
     }
 
     // Start async processing (don't wait for completion)
@@ -162,15 +171,19 @@ export const enrichTopFunds = async (req: Request, res: Response) => {
 /**
  * Search and enrich funds by name
  */
-export const searchAndEnrichFunds = async (req: Request, res: Response) => {
+export const searchAndEnrichFunds = async (
+  req: Request,
+  res: Response
+): Promise<void> => {
   try {
     const { query, limit = 10 } = req.query;
 
     if (!query || typeof query !== 'string') {
-      return res.status(400).json({
+      res.status(400).json({
         success: false,
         message: 'Search query is required',
       });
+      return;
     }
 
     // Get all funds
@@ -182,10 +195,11 @@ export const searchAndEnrichFunds = async (req: Request, res: Response) => {
       .slice(0, parseInt(limit as string));
 
     if (matchingFunds.length === 0) {
-      return res.status(404).json({
+      res.status(404).json({
         success: false,
         message: `No funds found matching: ${query}`,
       });
+      return;
     }
 
     // Extract scheme codes

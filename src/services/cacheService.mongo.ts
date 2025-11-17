@@ -80,7 +80,10 @@ class CacheService {
         const cacheCollection = mongodb.getCollection<Cache>('cache');
         const cached = await cacheCollection.findOne({
           key,
-          $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
+          $or: [
+            { expiresAt: { $exists: false } },
+            { expiresAt: { $gt: new Date() } },
+          ],
         });
         return cached?.value || null;
       } catch (error) {
@@ -129,24 +132,30 @@ class CacheService {
         const existingCache = await cacheCollection.findOne({ key });
 
         if (existingCache) {
+          const updateFields: any = {
+            value,
+            updatedAt: new Date(),
+          };
+          if (expiresAt) {
+            updateFields.expiresAt = expiresAt;
+          }
           await cacheCollection.updateOne(
             { key },
             {
-              $set: {
-                value,
-                expiresAt,
-                updatedAt: new Date(),
-              },
+              $set: updateFields,
             }
           );
         } else {
-          await cacheCollection.insertOne({
+          const docToInsert: any = {
             key,
             value,
-            expiresAt: expiresAt || undefined,
             createdAt: new Date(),
             updatedAt: new Date(),
-          });
+          };
+          if (expiresAt) {
+            docToInsert.expiresAt = expiresAt;
+          }
+          await cacheCollection.insertOne(docToInsert);
         }
       } catch (error) {
         console.error('Cache set error (MongoDB):', error);
@@ -234,7 +243,10 @@ class CacheService {
         const cacheCollection = mongodb.getCollection<Cache>('cache');
         const cached = await cacheCollection.findOne({
           key,
-          $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }],
+          $or: [
+            { expiresAt: { $exists: false } },
+            { expiresAt: { $gt: new Date() } },
+          ],
         });
         return !!cached;
       } catch (error) {

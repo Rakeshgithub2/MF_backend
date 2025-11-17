@@ -1,5 +1,6 @@
 // MongoDB Change Streams watcher for real-time watchlist updates
 // NOTE: Requires MongoDB replica set (use setup-mongodb-replica.ps1 for local dev)
+import { ObjectId } from 'mongodb';
 import { mongodb } from '../db/mongodb';
 import { emitWatchlistUpdate } from './socket';
 
@@ -61,7 +62,7 @@ export const startWatchlistChangeStream = async () => {
         if (userId) {
           // Fetch updated watchlist for this user
           const watchlistItems = await collection
-            .find({ userId: mongodb.toObjectId(userId) })
+            .find({ userId: new ObjectId(userId) })
             .toArray();
 
           // Emit to user's socket room

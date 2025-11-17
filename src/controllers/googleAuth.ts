@@ -132,7 +132,7 @@ export const handleGoogleCallback = async (
           $set: {
             googleId: payload.sub,
             name: payload.name || existingUser.name,
-            profilePicture: payload.picture || existingUser.profilePicture,
+            ...(payload.picture && { profilePicture: payload.picture }),
             provider: 'google',
             isVerified: true,
             updatedAt: new Date(),
@@ -158,7 +158,7 @@ export const handleGoogleCallback = async (
         googleId: payload.sub,
         email: payload.email,
         name: payload.name || payload.email.split('@')[0],
-        profilePicture: payload.picture || undefined,
+        ...(payload.picture && { profilePicture: payload.picture }),
         provider: 'google',
         password: await hashPassword(crypto.randomBytes(20).toString('hex')),
         role: 'USER',
