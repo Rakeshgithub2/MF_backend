@@ -52,10 +52,10 @@ app.get('/health', (req, res) => {
 // Test endpoint (no DB required) - BEFORE DB middleware
 app.get('/api/test', (req, res) => {
   console.log('Test endpoint hit');
-  res.json({ 
+  res.json({
     message: 'API is working!',
     timestamp: new Date().toISOString(),
-    env: process.env.NODE_ENV || 'development'
+    env: process.env.NODE_ENV || 'development',
   });
 });
 
@@ -73,7 +73,10 @@ app.use(async (req, res, next) => {
     // Return 503 instead of continuing
     res.status(503).json({
       error: 'Database unavailable',
-      message: error instanceof Error ? error.message : 'Failed to connect to database'
+      message:
+        error instanceof Error
+          ? error.message
+          : 'Failed to connect to database',
     });
   }
 });

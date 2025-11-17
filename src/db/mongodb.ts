@@ -75,6 +75,9 @@ class MongoDB {
   }
 }
 
+// Export the class for type checking
+export { MongoDB };
+
 export const mongodb = MongoDB.getInstance();
 
 // For serverless: Connect lazily, not on module load
