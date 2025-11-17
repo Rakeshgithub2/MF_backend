@@ -1,0 +1,246 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  email     String   @unique
+  password  String
+  name      String
+  age       Int?
+  riskLevel String?  // LOW, MEDIUM, HIGH
+  role      String   @default("USER") // USER, ADMIN
+  isVerified Boolean @default(false)
+  
+  // OAuth fields
+  googleId  String?  @unique
+  provider  String?  @default("local") // local, google
+  profilePicture String?
+  
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // Relations
+  watchlists WatchlistItem[]
+  portfolios Portfolio[]
+  refreshTokens RefreshToken[]
+  goals Goal[]
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  token     String   @unique
+  userId    String   @db.ObjectId
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("refresh_tokens")
+}
+
+model Fund {
+  id            String    @id @default(auto()) @map("_id") @db.ObjectId
+  amfiCode      String    @unique
+  name          String
+  type          String    // EQUITY, DEBT, HYBRID, etc.
+  category      String    // LARGE_CAP, MID_CAP, SMALL_CAP, etc.
+  benchmark     String?
+  expenseRatio  Float?
+  inceptionDate DateTime?
+  description   String?
+  isActive      Boolean   @default(true)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  // Relations
+  performances  FundPerformance[]
+  holdings      Holding[]
+  managedBy     FundManager[]
+  managementTeam ManagementTeamMember[]
+  portfolioActions PortfolioAction[]
+  watchlistItems WatchlistItem[]
+  portfolioItems PortfolioItem[]
+
+  @@map("funds")
+}
+
+model FundPerformance {
+  id     String   @id @default(auto()) @map("_id") @db.ObjectId
+  fundId String   @db.ObjectId
+  date   DateTime
+  nav    Float
+  createdAt DateTime @default(now())
+
+  fund Fund @relation(fields: [fundId], references: [id], onDelete: Cascade)
+
+  @@unique([fundId, date])
+  @@map("fund_performances")
+}
+
+model Holding {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  fundId  String @db.ObjectId
+  ticker  String
+  name    String
+  percent Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  fund Fund @relation(fields: [fundId], references: [id], onDelete: Cascade)
+
+  @@map("holdings")
+}
+
+model FundManager {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  name        String
+  experience  Int?   // years of experience
+  qualification String?
+  bio         String?
+  photo       String?
+  fundId      String @db.ObjectId @unique
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  fund Fund @relation(fields: [fundId], references: [id], onDelete: Cascade)
+
+  @@map("fund_managers")
+}
+
+model ManagementTeamMember {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  fundId      String @db.ObjectId
+  name        String
+  role        String
+  experience  String    // e.g., "10 years"
+  expertise   String
+  education   String
+  order       Int       // Display order
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  fund Fund @relation(fields: [fundId], references: [id], onDelete: Cascade)
+
+  @@map("management_team_members")
+}
+
+model PortfolioAction {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  fundId      String @db.ObjectId
+  date        String    // e.g., "Oct 2024"
+  action      String    // "Increased Stake", "New Entry", "Reduced Stake", "Exit"
+  company     String
+  rationale   String
+  order       Int       // Display order
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  fund Fund @relation(fields: [fundId], references: [id], onDelete: Cascade)
+
+  @@map("portfolio_actions")
+}
+
+model WatchlistItem {
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @db.ObjectId
+  fundId String @db.ObjectId
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  fund Fund @relation(fields: [fundId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, fundId])
+  @@map("watchlist_items")
+}
+
+// REMOVED: Alert model - not focusing on alerts feature
+
+model News {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  title     String
+  content   String
+  source    String?
+  category  String?  // MARKET, FUND_SPECIFIC, REGULATORY
+  tags      String[] // Array of tags
+  publishedAt DateTime
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("news")
+}
+
+model Portfolio {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String @db.ObjectId
+  name      String
+  totalValue Float @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  items PortfolioItem[]
+
+  @@map("portfolios")
+}
+
+model PortfolioItem {
+  id          String @id @default(auto()) @map("_id") @db.ObjectId
+  portfolioId String @db.ObjectId
+  fundId      String @db.ObjectId
+  units       Float
+  investedAmount Float
+  currentValue Float @default(0)
+  investedAt  DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  portfolio Portfolio @relation(fields: [portfolioId], references: [id], onDelete: Cascade)
+  fund      Fund @relation(fields: [fundId], references: [id], onDelete: Cascade)
+
+  @@map("portfolio_items")
+}
+
+// REMOVED: Investment model - not focusing on buy/sell features
+// REMOVED: Transaction model - not focusing on buy/sell features  
+// REMOVED: KYC model - not focusing on KYC verification
+
+model Cache {
+  id        String   @id @default(auto()) @map("_id") @db.ObjectId
+  key       String   @unique
+  value     String
+  expiresAt DateTime?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("cache")
+}
+
+model Goal {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @db.ObjectId
+  name          String
+  targetAmount  Float
+  currentAmount Float    @default(0)
+  targetDate    DateTime
+  priority      String   @default("MEDIUM") // LOW, MEDIUM, HIGH
+  category      String   // RETIREMENT, EDUCATION, HOUSE, VACATION, EMERGENCY, OTHER
+  status        String   @default("IN_PROGRESS") // IN_PROGRESS, ACHIEVED, ABANDONED
+  description   String?
+  linkedFunds   String[] // Array of fund IDs
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("goals")
+}

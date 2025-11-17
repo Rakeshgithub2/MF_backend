@@ -1,0 +1,240 @@
+# Complete Docker Compose for AI Mutuals Backend
+# Production-ready with MongoDB, Redis, and all services
+
+version: '3.8'
+
+services:
+  # ==========================================
+  # MongoDB Database
+  # ==========================================
+  mongodb:
+    image: mongo:7.0
+    container_name: aimutuals-mongodb
+    restart: unless-stopped
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USERNAME:-admin}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-password123}
+      MONGO_INITDB_DATABASE: mutual_funds_db
+    ports:
+      - '27017:27017'
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+      - ./docker/mongo-init.js:/docker-entrypoint-initdb.d/mongo-init.js:ro
+    networks:
+      - aimutuals-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  # ==========================================
+  # Redis Cache & Queue
+  # ==========================================
+  redis:
+    image: redis:7-alpine
+    container_name: aimutuals-redis
+    restart: unless-stopped
+    ports:
+      - '6379:6379'
+    volumes:
+      - redis_data:/data
+    command: >
+      redis-server
+      --appendonly yes
+      --maxmemory 1gb
+      --maxmemory-policy allkeys-lru
+      --save 900 1
+      --save 300 10
+      --save 60 10000
+    networks:
+      - aimutuals-network
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # ==========================================
+  # Main Backend Application
+  # ==========================================
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+      target: production
+    container_name: aimutuals-backend
+    restart: unless-stopped
+    ports:
+      - '${PORT:-3002}:${PORT:-3002}'
+    environment:
+      # Server
+      NODE_ENV: production
+      PORT: ${PORT:-3002}
+
+      # Database
+      DATABASE_URL: mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD:-password123}@mongodb:27017/mutual_funds_db?authSource=admin
+
+      # Redis
+      REDIS_URL: redis://redis:6379
+
+      # JWT
+      JWT_SECRET: ${JWT_SECRET}
+      JWT_REFRESH_SECRET: ${JWT_REFRESH_SECRET}
+
+      # APIs
+      RAPIDAPI_KEY: ${RAPIDAPI_KEY}
+      RAPIDAPI_HOST: ${RAPIDAPI_HOST}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      NEWSDATA_API_KEY: ${NEWSDATA_API_KEY}
+      AMFI_NAV_URL: ${AMFI_NAV_URL}
+
+      # Google OAuth
+      GOOGLE_CLIENT_ID: ${GOOGLE_CLIENT_ID}
+      GOOGLE_CLIENT_SECRET: ${GOOGLE_CLIENT_SECRET}
+      GOOGLE_REDIRECT_URI: ${GOOGLE_REDIRECT_URI}
+
+      # OpenAI (optional)
+      OPENAI_API_KEY: ${OPENAI_API_KEY}
+
+      # Frontend URL
+      FRONTEND_URL: ${FRONTEND_URL:-http://localhost:5001}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+      - ./uploads:/app/uploads
+    networks:
+      - aimutuals-network
+    healthcheck:
+      test: ['CMD', 'curl', '-f', 'http://localhost:${PORT:-3002}/health']
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+  # ==========================================
+  # Background Worker for Jobs
+  # ==========================================
+  worker:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+      target: production
+    container_name: aimutuals-worker
+    restart: unless-stopped
+    command: ['node', 'dist/worker.js']
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD:-password123}@mongodb:27017/mutual_funds_db?authSource=admin
+      REDIS_URL: redis://redis:6379
+      RAPIDAPI_KEY: ${RAPIDAPI_KEY}
+      RAPIDAPI_HOST: ${RAPIDAPI_HOST}
+      RESEND_API_KEY: ${RESEND_API_KEY}
+      NEWSDATA_API_KEY: ${NEWSDATA_API_KEY}
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - aimutuals-network
+
+  # ==========================================
+  # Scheduler for Cron Jobs
+  # ==========================================
+  scheduler:
+    build:
+      context: .
+      dockerfile: Dockerfile.production
+      target: production
+    container_name: aimutuals-scheduler
+    restart: unless-stopped
+    command: ['npm', 'run', 'scheduler']
+    environment:
+      NODE_ENV: production
+      DATABASE_URL: mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD:-password123}@mongodb:27017/mutual_funds_db?authSource=admin
+      REDIS_URL: redis://redis:6379
+      RAPIDAPI_KEY: ${RAPIDAPI_KEY}
+      AMFI_NAV_URL: ${AMFI_NAV_URL}
+      TZ: Asia/Kolkata
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./logs:/app/logs
+    networks:
+      - aimutuals-network
+
+  # ==========================================
+  # Mongo Express (Database Admin UI)
+  # Optional - Enable with: docker-compose --profile tools up
+  # ==========================================
+  mongo-express:
+    image: mongo-express:latest
+    container_name: aimutuals-mongo-express
+    restart: unless-stopped
+    ports:
+      - '8081:8081'
+    environment:
+      ME_CONFIG_MONGODB_ADMINUSERNAME: ${MONGO_USERNAME:-admin}
+      ME_CONFIG_MONGODB_ADMINPASSWORD: ${MONGO_PASSWORD:-password123}
+      ME_CONFIG_MONGODB_URL: mongodb://${MONGO_USERNAME:-admin}:${MONGO_PASSWORD:-password123}@mongodb:27017/
+      ME_CONFIG_BASICAUTH_USERNAME: ${ME_USERNAME:-admin}
+      ME_CONFIG_BASICAUTH_PASSWORD: ${ME_PASSWORD:-admin123}
+    depends_on:
+      - mongodb
+    networks:
+      - aimutuals-network
+    profiles:
+      - tools
+
+  # ==========================================
+  # Redis Commander (Redis Admin UI)
+  # Optional - Enable with: docker-compose --profile tools up
+  # ==========================================
+  redis-commander:
+    image: rediscommander/redis-commander:latest
+    container_name: aimutuals-redis-commander
+    restart: unless-stopped
+    ports:
+      - '8082:8081'
+    environment:
+      REDIS_HOSTS: local:redis:6379
+    depends_on:
+      - redis
+    networks:
+      - aimutuals-network
+    profiles:
+      - tools
+
+# ==========================================
+# Networks
+# ==========================================
+networks:
+  aimutuals-network:
+    driver: bridge
+    name: aimutuals-network
+
+# ==========================================
+# Volumes
+# ==========================================
+volumes:
+  mongodb_data:
+    driver: local
+    name: aimutuals-mongodb-data
+  mongodb_config:
+    driver: local
+    name: aimutuals-mongodb-config
+  redis_data:
+    driver: local
+    name: aimutuals-redis-data
