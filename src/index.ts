@@ -6,6 +6,7 @@ import { createServer } from 'http';
 import routes from './routes';
 import { errorHandler } from './middlewares/error';
 import { generalRateLimit } from './middleware/rateLimiter';
+import { connectToDatabase } from './db/mongodb';
 // Import Socket.IO and Change Streams (will handle gracefully if not available)
 // import { initializeSocket } from './services/socket';
 // import { startWatchlistChangeStream } from './services/changeStreams';
@@ -38,6 +39,17 @@ app.use(
 // Body parsing middleware
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Middleware to ensure DB connection for serverless
+app.use(async (req, res, next) => {
+  try {
+    await connectToDatabase();
+    next();
+  } catch (error) {
+    console.error('Database connection error:', error);
+    next(); // Continue anyway, routes will handle DB errors
+  }
+});
 
 // Health check endpoint
 app.get('/health', (req, res) => {

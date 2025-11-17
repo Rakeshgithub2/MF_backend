@@ -54,7 +54,21 @@ class MongoDB {
 
 export const mongodb = MongoDB.getInstance();
 
-// Connect on module load - don't crash if it fails
-mongodb.connect().catch((err) => {
-  console.error('⚠️ MongoDB connection failed, but continuing:', err.message);
-});
+// For serverless: Connect lazily, not on module load
+export const connectToDatabase = async (): Promise<void> => {
+  try {
+    if (!mongodb.getDb()) {
+      await mongodb.connect();
+    }
+  } catch (error) {
+    // If getDb throws, it means not connected yet
+    await mongodb.connect();
+  }
+};
+
+// Auto-connect for non-serverless environments
+if (process.env.NODE_ENV !== 'production' || !process.env.VERCEL) {
+  mongodb.connect().catch((err) => {
+    console.error('⚠️ MongoDB connection failed, but continuing:', err.message);
+  });
+}
