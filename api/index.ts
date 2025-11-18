@@ -1,42 +1,25 @@
-// Vercel Serverless Function Entry Point
-import express from 'express';
-import cors from 'cors';
-import helmet from 'helmet';
+// Minimal Vercel Serverless Function
+export default function handler(req: any, res: any) {
+  // Set CORS headers
+  res.setHeader('Access-Control-Allow-Origin', 'https://mf-frontend-coral.vercel.app');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
 
-const app = express();
+  // Handle preflight
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
 
-// Security & CORS
-app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
-app.use(
-  cors({
-    origin: 'https://mf-frontend-coral.vercel.app',
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-  })
-);
-
-// Body parsing
-app.use(express.json());
-
-// Simple test routes
-app.get('/health', (req, res) => {
-  res.json({
-    status: 'OK',
+  // Return success response
+  res.status(200).json({
+    message: 'Backend is working!',
     timestamp: new Date().toISOString(),
+    path: req.url,
     env: {
       hasDB: !!process.env.DATABASE_URL,
       hasJWT: !!process.env.JWT_SECRET,
-    },
+      nodeEnv: process.env.NODE_ENV,
+    }
   });
-});
-
-app.get('/api/test', (req, res) => {
-  res.json({
-    message: 'API is working!',
-    timestamp: new Date().toISOString(),
-  });
-});
-
-// Export for Vercel
-export default app;
+}
