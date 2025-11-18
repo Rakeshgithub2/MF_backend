@@ -5,7 +5,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Set CORS headers
   res.setHeader(
     'Access-Control-Allow-Origin',
-    'https://mf-frontend-coral.vercel.app'
+    'https://mf-frontend-eight.vercel.app'
   );
   res.setHeader(
     'Access-Control-Allow-Methods',
