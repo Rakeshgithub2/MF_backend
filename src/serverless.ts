@@ -1,29 +1,36 @@
+import type { VercelRequest, VercelResponse } from '@vercel/node';
 import app from './index';
-import { mongodb } from './db/mongodb';
+import { MongoDB } from './db/mongodb';
 
-// Ensure MongoDB is connected before handling requests
+// Cache for serverless
 let isConnected = false;
 
-const connectDB = async () => {
+const connectDB = async (): Promise<void> => {
   if (isConnected) {
     return;
   }
 
   try {
-    await mongodb.connect();
-    isConnected = true;
-    console.log('✅ MongoDB connected for serverless function');
+    const mongodb = MongoDB.getInstance();
+    if (!mongodb.isConnected()) {
+      await mongodb.connect();
+      isConnected = true;
+      console.log('✅ MongoDB connected for serverless function');
+    }
   } catch (error) {
     console.error('❌ MongoDB connection error:', error);
-    // Don't throw - let the app handle it gracefully
+    // Continue anyway - some endpoints don't need DB
   }
 };
 
-// For Vercel serverless
-export default async (req: any, res: any) => {
+// For Vercel serverless - proper typing
+export default async function handler(req: VercelRequest, res: VercelResponse) {
+  // Connect to DB before processing request
   await connectDB();
+
+  // Pass request to Express app
   return app(req, res);
-};
+}
 
 // Also export the app for local development
 export { app };

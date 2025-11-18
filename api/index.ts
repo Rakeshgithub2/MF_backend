@@ -1,5 +1,7 @@
-// Minimal Vercel Serverless Function
-export default function handler(req: any, res: any) {
+import type { VercelRequest, VercelResponse } from '@vercel/node';
+
+// Main serverless handler - routes all API requests to Express app
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   // Set CORS headers
   res.setHeader(
     'Access-Control-Allow-Origin',
@@ -17,15 +19,16 @@ export default function handler(req: any, res: any) {
     return res.status(200).end();
   }
 
-  // Return success response
-  res.status(200).json({
-    message: 'Backend is working!',
-    timestamp: new Date().toISOString(),
-    path: req.url,
-    env: {
-      hasDB: !!process.env.DATABASE_URL,
-      hasJWT: !!process.env.JWT_SECRET,
-      nodeEnv: process.env.NODE_ENV,
-    },
-  });
+  try {
+    // Import the serverless handler
+    const { default: serverlessHandler } = await import('../src/serverless');
+    return await serverlessHandler(req, res);
+  } catch (error: any) {
+    console.error('Serverless handler error:', error);
+    return res.status(500).json({
+      error: 'Internal server error',
+      message: error.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
 }
