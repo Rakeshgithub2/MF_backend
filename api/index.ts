@@ -2,11 +2,9 @@ import type { VercelRequest, VercelResponse } from '@vercel/node';
 
 // Main serverless handler - routes all API requests to Express app
 export default async function handler(req: VercelRequest, res: VercelResponse) {
-  // Set CORS headers
-  res.setHeader(
-    'Access-Control-Allow-Origin',
-    'https://mf-frontend-eight.vercel.app'
-  );
+  // Set CORS headers - use environment variable
+  const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:5001';
+  res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
   res.setHeader(
     'Access-Control-Allow-Methods',
     'GET, POST, PUT, DELETE, OPTIONS'

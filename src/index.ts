@@ -29,9 +29,11 @@ const allowedOrigins = [
   'http://localhost:5001',
   'http://localhost:3000',
   'http://localhost:3001',
+  process.env.FRONTEND_URL,
   'https://mf-frontend-coral.vercel.app',
-  process.env.FRONTEND_URL || 'http://localhost:5001',
-];
+  'https://mf-frontend-eight.vercel.app',
+  'https://mutual-funds-portal.vercel.app',
+].filter(Boolean);
 
 app.use(
   cors({

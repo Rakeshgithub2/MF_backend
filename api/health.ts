@@ -1,10 +1,8 @@
 // Minimal test endpoint for Vercel debugging
 export default function handler(req: any, res: any) {
   try {
-    res.setHeader(
-      'Access-Control-Allow-Origin',
-      'https://mf-frontend-coral.vercel.app'
-    );
+    const allowedOrigin = process.env.FRONTEND_URL || 'http://localhost:5001';
+    res.setHeader('Access-Control-Allow-Origin', allowedOrigin);
     res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
     res.setHeader(
       'Access-Control-Allow-Headers',
