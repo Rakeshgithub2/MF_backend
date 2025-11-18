@@ -1,8 +1,14 @@
 // Minimal Vercel Serverless Function
 export default function handler(req: any, res: any) {
   // Set CORS headers
-  res.setHeader('Access-Control-Allow-Origin', 'https://mf-frontend-coral.vercel.app');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+  res.setHeader(
+    'Access-Control-Allow-Origin',
+    'https://mf-frontend-coral.vercel.app'
+  );
+  res.setHeader(
+    'Access-Control-Allow-Methods',
+    'GET, POST, PUT, DELETE, OPTIONS'
+  );
   res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
   res.setHeader('Access-Control-Allow-Credentials', 'true');
 
@@ -20,6 +26,6 @@ export default function handler(req: any, res: any) {
       hasDB: !!process.env.DATABASE_URL,
       hasJWT: !!process.env.JWT_SECRET,
       nodeEnv: process.env.NODE_ENV,
-    }
+    },
   });
 }
