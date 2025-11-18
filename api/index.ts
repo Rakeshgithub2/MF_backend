@@ -2,21 +2,19 @@
 import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
-import dotenv from 'dotenv';
-
-// Load environment variables
-dotenv.config();
 
 const app = express();
 
 // Security & CORS
-app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
-app.use(cors({
-  origin: 'https://mf-frontend-coral.vercel.app',
-  credentials: true,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-}));
+app.use(helmet({ crossOriginResourcePolicy: { policy: 'cross-origin' } }));
+app.use(
+  cors({
+    origin: 'https://mf-frontend-coral.vercel.app',
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization'],
+  })
+);
 
 // Body parsing
 app.use(express.json());
@@ -29,7 +27,7 @@ app.get('/health', (req, res) => {
     env: {
       hasDB: !!process.env.DATABASE_URL,
       hasJWT: !!process.env.JWT_SECRET,
-    }
+    },
   });
 });
 
