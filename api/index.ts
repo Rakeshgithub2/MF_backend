@@ -1,5 +1,3 @@
 // Vercel Serverless Function Entry Point
-import app from '../src/index';
-
-// Export the Express app directly for Vercel
-export default app;
+// Use the serverless wrapper that handles DB connection
+export { default } from '../src/serverless';
